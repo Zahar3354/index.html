@@ -5,13 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NASA: Мовчазні дослідники Сонячної системи</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-    <!-- 3D Полотно на весь екран -->
+    <!-- 3D Полотно на весь екран (для фонового візуалу) -->
     <canvas id="space-canvas"></canvas>
 
     <!-- Навігація -->
@@ -22,12 +23,15 @@
             <a href="#nasa-company">NASA</a>
             <a href="#mars">Марс</a>
             <a href="#moon">Місяць</a>
-            <a href="#explorer">3D Радар</a>
+            <a href="#research">Дослідження</a>
         </div>
     </nav>
 
-    <!-- ЕКРАН 1: HERO -->
+    <!-- ЕКРАН 1: HERO (ШАПКА З МЕТЕОРИТАМИ) -->
     <header class="hero section">
+        <!-- Контейнер для метеоритів, які літають виключно в шапці -->
+        <div class="meteors-container"></div>
+
         <div class="hero-content">
             <span class="badge">NASA SPACE APPS CHALLENGE</span>
             <h1>Історії залишеного обладнання</h1>
@@ -192,7 +196,6 @@
         </div>
 
          <div class="stage-container">
-            <!-- 1. Apollo 11 -->
             <div id="moon-slide-1" class="story-slide">
                 <div class="slide-text from-left">
                     <span class="years">1969 • Море Спокою</span>
@@ -285,50 +288,45 @@
             </div>
         </div>
     </section>
-<section id="explorer" class="explorer-section">
-    <div class="explorer-ui">
-        <span class="tag">ІНТЕРАКТИВНИЙ РАДАР</span>
-        <h2 class="section-title">Очима дослідників</h2>
-        <p class="explorer-sub">Обертай глобус мишкою та натисни на маячок апарата, щоб увімкнути вид від першої особи.</p>
-        <div class="planet-switcher">
-            <button class="planet-btn active" data-planet="mars" onclick="setExplorerPlanet('mars')">🔴 Марс</button>
-            <button class="planet-btn" data-planet="moon" onclick="setExplorerPlanet('moon')">⚪ Місяць</button>
-        </div>
-    </div>
-</section>
 
-<!-- Шар для 3D-іконок супутників/роверів -->
-<div id="markers-layer" class="markers-layer"></div>
+    <!-- НОВИЙ ЕКРАН: ІНФОРМАЦІЯ ПРО ДОСЛІДЖЕННЯ З КАРУСЕЛЬЮ ФОТО -->
+    <section id="research" class="section research-section">
+        <div class="research-container">
+            <div class="research-header">
+                <div>
+                    <span class="tag" id="research-tag">ЧЕРВОНА ПЛАНЕТА</span>
+                    <h2 class="section-title" id="research-title">Чому людство досліджує Марс?</h2>
+                </div>
+                <div class="planet-switcher">
+                    <button class="planet-btn active" onclick="switchResearchPlanet('mars')">🔴 Марс</button>
+                    <button class="planet-btn" onclick="switchResearchPlanet('moon')">⚪ Місяць</button>
+                </div>
+            </div>
 
-<div id="pov-overlay" class="pov-overlay">
-    <!-- Сюди рендериться 3D-простір 360 градусів -->
-    <div id="pov-three-container"></div>
-    
-    <div class="pov-vignette"></div>
-    <div class="pov-hud">
-        <div class="pov-top-bar">
-            <div class="pov-rec"><span class="rec-dot"></span> 360° LIVE POV // <span id="pov-cam">CAM-01</span></div>
-            <button class="pov-exit-btn" onclick="closePOV()">✕ Вийти з камери</button>
-        </div>
-        <div class="pov-bottom-panel">
-            <h3 id="pov-title" style="color: #f5c518; margin-bottom: 6px;">Назва</h3>
-            <p id="pov-text" style="font-style: italic; color: #f4f6fb;">Текст від першої особи...</p>
-        </div>
-    </div>
-</div>
+            <div class="research-content-card">
+                <div class="research-text-block">
+                    <h3>Мета та мотивація місій</h3>
+                    <p id="research-why">Марс є найближчою до Землі планетою, умови на якій колись були схожими на земні. Головна мета вивчення — з'ясувати, чи існувало там давнє мікробіологічне життя, та зрозуміти, чому планета втратила свою атмосферу й вологу.</p>
+                </div>
+                <div class="research-text-block">
+                    <h3>Чим це допомагає людству?</h3>
+                    <p id="research-help">Дослідження Марса дає уявлення про глобальні зміни клімату на Землі. Крім того, розробка технологій для виживання у суворих марсіанських умовах стимулює інновації в медицині, робототехніці, генерації енергії та готує людство до майбутніх пілотованих польотів.</p>
+                </div>
+            </div>
 
-    <div class="pov-vignette"></div>
-    <div class="pov-hud">
-        <div class="pov-top-bar">
-            <div class="pov-rec"><span class="rec-dot"></span> LIVE POV // <span id="pov-cam">CAM-01</span></div>
-            <button class="pov-exit-btn" onclick="closePOV()">✕ Вийти з камери</button>
+            <div class="nasa-carousel-wrapper">
+                <h3 class="carousel-heading">Реальні кадри з архіву NASA</h3>
+                <div class="carousel-track-container">
+                    <button class="carousel-btn prev-btn" onclick="moveCarousel(-1)">&#10094;</button>
+                    <div class="carousel-viewport">
+                        <div class="carousel-track" id="carousel-track"></div>
+                    </div>
+                    <button class="carousel-btn next-btn" onclick="moveCarousel(1)">&#10095;</button>
+                </div>
+            </div>
         </div>
-        <div class="pov-bottom-panel">
-            <h3 id="pov-title" style="color: #f5c518; margin-bottom: 6px;">Назва</h3>
-            <p id="pov-text" style="font-style: italic; color: #f4f6fb;">Текст від першої особи...</p>
-        </div>
-    </div>
-</div>
+    </section>
+
     <!-- ФУТЕР -->
     <footer>
         <p>NASA Space Apps Challenge 2026 • Інтерактивний освітній архів</p>
@@ -348,6 +346,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollToPlugin.min.js"></script>
     <script src="script.js"></script>
 </body>
 </html>
