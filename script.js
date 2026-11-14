@@ -1,5 +1,5 @@
 // ==========================================
-// 1. НАЛАШТУВАННЯ 3D СЦЕНИ
+// 1. НАЛАШТУВАННЯ 3D СЦЕНИ (Світіння Сонця та планети)
 // ==========================================
 const canvas = document.getElementById('space-canvas');
 const scene = new THREE.Scene();
@@ -27,7 +27,7 @@ const starField = new THREE.Points(
 );
 scene.add(starField);
 
-// Завантажувач реальних текстур NASA
+// Завантажувач текстур
 const textureLoader = new THREE.TextureLoader();
 const maxAnisotropy = renderer.capabilities.getMaxAnisotropy();
 
@@ -38,15 +38,11 @@ function loadPlanetTexture(path) {
     return texture;
 }
 
-const sunUniforms = {
-    uTime: { value: 0 }
-};
+const sunUniforms = { uTime: { value: 0 } };
 
-// Спільний 3D Simplex Noise для поверхні та полум'я
 const simplexNoiseGLSL = `
     vec4 permute(vec4 x){return mod(((x*34.0)+1.0)*x, 289.0);}
     vec4 taylorInvSqrt(vec4 r){return 1.79284291400159 - 0.85373472095314 * r;}
-
     float snoise(vec3 v){ 
         const vec2  C = vec2(1.0/6.0, 1.0/3.0) ;
         const vec4  D = vec4(0.0, 0.5, 1.0, 2.0);
@@ -89,7 +85,6 @@ const simplexNoiseGLSL = `
         m = m * m;
         return 42.0 * dot( m*m, vec4( dot(p0,x0), dot(p1,x1), dot(p2,x2), dot(p3,x3) ) );
     }
-
     float fbm(vec3 p) {
         float value = 0.0;
         float amp = 0.5;
@@ -102,7 +97,6 @@ const simplexNoiseGLSL = `
     }
 `;
 
-// 1A. ЯДРО СОНЦЯ (ФОТОСФЕРА З ГРАНУЛЯЦІЄЮ ТА МАГНІТНИМИ ПЛЯМАМИ)
 const sunSurfaceMaterial = new THREE.ShaderMaterial({
     uniforms: sunUniforms,
     vertexShader: `
@@ -119,165 +113,55 @@ const sunSurfaceMaterial = new THREE.ShaderMaterial({
         varying vec3 vNormal;
         varying vec3 vPos;
         ${simplexNoiseGLSL}
-
         void main() {
             vec3 dir = normalize(vPos);
-            
-            // Викривлення потоків плазми (Domain Warping)
             vec3 q = vec3(
                 fbm(dir * 2.5 + vec3(0.0, uTime * 0.08, 0.0)),
                 fbm(dir * 2.5 + vec3(5.2, 1.3, uTime * 0.08)),
                 fbm(dir * 2.5 + vec3(2.1, uTime * 0.08, 4.7))
             );
-
-            // Дрібна вогняна грануляція
             float detail = fbm(dir * 14.0 + q * 2.5 - uTime * 0.12);
-            // Великі сонячні плями
             float spots = snoise(dir * 3.2 + q * 1.2 + uTime * 0.04);
-
             float heat = clamp(0.55 + detail * 0.65 + spots * 0.35, 0.0, 1.0);
-
-            // Реалістичний градієнт чорного тіла (від темних плям до білого жару)
             vec3 colDark = vec3(0.08, 0.005, 0.0);
             vec3 colRed = vec3(0.72, 0.09, 0.0);
             vec3 colOrange = vec3(1.0, 0.42, 0.02);
             vec3 colGold = vec3(1.0, 0.85, 0.25);
             vec3 colWhite = vec3(1.0, 0.99, 0.92);
-
             vec3 color = mix(colDark, colRed, smoothstep(0.05, 0.32, heat));
             color = mix(color, colOrange, smoothstep(0.32, 0.58, heat));
             color = mix(color, colGold, smoothstep(0.58, 0.82, heat));
             color = mix(color, colWhite, smoothstep(0.82, 0.98, heat));
-
-            // Об'ємне затемнення країв (Limb darkening) + вогняний контур
             float ndotv = clamp(dot(vNormal, vec3(0.0, 0.0, 1.0)), 0.0, 1.0);
             color *= pow(ndotv, 0.42) * 1.15;
             float rim = pow(1.0 - ndotv, 3.8);
             color += vec3(1.0, 0.35, 0.04) * rim * 1.4;
-
             gl_FragColor = vec4(color, 1.0);
         }
     `
 });
 
-const sun = new THREE.Mesh(
-    new THREE.SphereGeometry(4.2, 128, 128),
-    sunSurfaceMaterial
-);
-
-// 1B. ЗОВНІШНЯ КОРОНА ТА ПРОТУБЕРАНЦІ (ЯЗИКИ ПОЛУМ'Я НАВКОЛО КРАЮ)
-const sunCoronaMaterial = new THREE.ShaderMaterial({
-    uniforms: sunUniforms,
-    transparent: true,
-    blending: THREE.AdditiveBlending,
-    depthWrite: false,
-    side: THREE.BackSide,
-    vertexShader: `
-        varying vec3 vNormal;
-        varying vec3 vPos;
-        void main() {
-            vNormal = normalize(normalMatrix * normal);
-            vPos = position;
-            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-        }
-    `,
-    fragmentShader: `
-        uniform float uTime;
-        varying vec3 vNormal;
-        varying vec3 vPos;
-        ${simplexNoiseGLSL}
-
-        void main() {
-            // Вираховуємо відстань від краю сфери
-            float viewDot = dot(vNormal, vec3(0.0, 0.0, -1.0));
-            float glow = pow(clamp(viewDot, 0.0, 1.0), 2.8);
-
-            // Язики полум'я, що вириваються назовні
-            vec3 dir = normalize(vPos);
-            float flares = fbm(dir * 6.5 - uTime * 0.25);
-            float flareMask = smoothstep(-0.1, 0.65, flares);
-
-            float alpha = glow * (0.55 + flareMask * 0.85);
-            vec3 coronaColor = mix(vec3(0.95, 0.22, 0.02), vec3(1.0, 0.72, 0.2), glow);
-
-            gl_FragColor = vec4(coronaColor, alpha * 0.95);
-        }
-    `
-});
-
-const sunCoronaMesh = new THREE.Mesh(
-    new THREE.SphereGeometry(4.85, 128, 128),
-    sunCoronaMaterial
-);
-sun.add(sunCoronaMesh);
-const sunOuterGlowMaterial = new THREE.ShaderMaterial({
-    transparent: true,
-    blending: THREE.AdditiveBlending,
-    depthWrite: false,
-    side: THREE.BackSide,
-    vertexShader: `
-        varying vec3 vNormal;
-        void main() {
-            vNormal = normalize(normalMatrix * normal);
-            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-        }
-    `,
-    fragmentShader: `
-        varying vec3 vNormal;
-        void main() {
-            // Рахуємо кут нахилу поверхні від центру до країв
-            float intensity = pow(clamp(dot(vNormal, vec3(0.0, 0.0, -1.0)), 0.0, 1.0), 4.2);
-            
-            // Плавний перехід від гарячого помаранчевого до темного космосу
-            vec3 glowColor = mix(vec3(0.95, 0.25, 0.02), vec3(1.0, 0.78, 0.3), intensity);
-            
-            gl_FragColor = vec4(glowColor, intensity * 0.85);
-        }
-    `
-});
-
-const sunOuterGlowMesh = new THREE.Mesh(
-    new THREE.SphereGeometry(6, 64, 64),
-    sunOuterGlowMaterial
-);
-sun.add(sunOuterGlowMesh);
+const sun = new THREE.Mesh(new THREE.SphereGeometry(4.2, 128, 128), sunSurfaceMaterial);
 sun.position.set(16, 4, 0);
 scene.add(sun);
-// ------------------------------------------
-// 2. МАРС (РЕАЛЬНА ПОВЕРХНЯ NASA + РЕЛЬЄФ)
-// ------------------------------------------
+
 const marsTexture = loadPlanetTexture('textures/2k_mars.jpg');
 const mars = new THREE.Mesh(
     new THREE.SphereGeometry(3.2, 64, 64),
-    new THREE.MeshStandardMaterial({ 
-        map: marsTexture,
-        bumpMap: marsTexture,
-        bumpScale: 0.04,
-        roughness: 0.85,
-        metalness: 0.05
-    })
+    new THREE.MeshStandardMaterial({ map: marsTexture, bumpMap: marsTexture, bumpScale: 0.04, roughness: 0.85 })
 );
 mars.rotation.z = THREE.MathUtils.degToRad(25.2);
-mars.position.set(24, 12, -1.5);
+mars.position.set(12, 6, -1.5);
 mars.visible = false;
 scene.add(mars);
 
-// ------------------------------------------
-// 3. МІСЯЦЬ (РЕАЛЬНА ПОВЕРХНЯ NASA + РЕЛЬЄФ)
-// ------------------------------------------
 const moonTexture = loadPlanetTexture('textures/2k_moon.jpg');
 const moon = new THREE.Mesh(
     new THREE.SphereGeometry(3.2, 64, 64),
-    new THREE.MeshStandardMaterial({ 
-        map: moonTexture,
-        bumpMap: moonTexture,
-        bumpScale: 0.05,
-        roughness: 0.92,
-        metalness: 0.05
-    })
+    new THREE.MeshStandardMaterial({ map: moonTexture, bumpMap: moonTexture, bumpScale: 0.05, roughness: 0.92 })
 );
 moon.rotation.z = THREE.MathUtils.degToRad(6.7);
-moon.position.set(24, 12, -1.5);
+moon.position.set(12, 6, -1.5);
 moon.visible = false;
 scene.add(moon);
 
@@ -290,7 +174,6 @@ function animate() {
     moon.rotation.y += 0.002;
     renderer.render(scene, camera);
 }
-
 animate();
 
 window.addEventListener('resize', () => {
@@ -299,9 +182,7 @@ window.addEventListener('resize', () => {
     renderer.setSize(window.innerWidth, window.innerHeight);
 });
 
-// ==========================================
-// 2. GSAP SCROLLTRIGGER ХОРЕОГРАФІЯ (ПЛАВНИЙ ВЕРТИКАЛЬНИЙ СКРОЛ)
-// ==========================================
+// GSAP Хореографія
 gsap.registerPlugin(ScrollTrigger);
 
 gsap.utils.toArray('.slide-left').forEach(el => {
@@ -317,22 +198,22 @@ gsap.to(sun.position, {
 });
 
 function buildSmoothPlanetScene(sectionId, planetMesh, slidePrefix, totalSlides) {
-    const leftEls = [];
-    const rightEls = [];
-
+    const leftEls = [], rightEls = [];
     for (let i = 1; i <= totalSlides; i++) {
         leftEls.push(`#${slidePrefix}-${i} .from-left`);
         rightEls.push(`#${slidePrefix}-${i} .from-right`);
     }
-
+    
     gsap.set(leftEls.join(', '), { x: -300, opacity: 0 });
     gsap.set(rightEls.join(', '), { x: 300, opacity: 0 });
+
+    const scrollLength = totalSlides * 950;
 
     const tl = gsap.timeline({
         scrollTrigger: {
             trigger: sectionId,
             start: "top top",
-            end: `+=${totalSlides * 950}`,
+            end: `+=${scrollLength}`,
             pin: true,
             scrub: 1.2,
             onEnter: () => { planetMesh.visible = true; },
@@ -342,182 +223,202 @@ function buildSmoothPlanetScene(sectionId, planetMesh, slidePrefix, totalSlides)
         }
     });
 
-    tl.set(planetMesh.position, { x: 24, y: 12 });
+    tl.fromTo(planetMesh.position, 
+        { x: 12, y: 6, z: -1.5 }, 
+        { x: -8, y: -10, z: 0, ease: "none", duration: totalSlides * 2 }, 
+        0
+    );
 
-    tl.to(planetMesh.position, { x: 6, y: 3, duration: 2, ease: "power1.out" }, "step1")
-      .to(`#${slidePrefix}-1 .from-left`, { x: 0, opacity: 1, duration: 2, ease: "power2.out" }, "step1")
-      .to(`#${slidePrefix}-1 .from-right`, { x: 0, opacity: 1, duration: 2, ease: "power2.out" }, "step1")
-      .to({}, { duration: 1.2 });
+    for (let i = 1; i <= totalSlides; i++) {
+        const stepTime = (i - 1) * 2;
+        const animDuration = (i === 1) ? 1.0 : 1.2;
 
-    for (let i = 2; i < totalSlides; i++) {
-        const tag = `step${i}`;
-        const prev = i - 1;
+        tl.to(`#${slidePrefix}-${i} .from-left`, { x: 0, opacity: 1, duration: animDuration, ease: "power2.out" }, stepTime)
+          .to(`#${slidePrefix}-${i} .from-right`, { x: 0, opacity: 1, duration: animDuration, ease: "power2.out" }, stepTime);
 
-        if (i === 2) {
-            tl.to(planetMesh.position, { x: 0, y: 0, duration: 2, ease: "power1.inOut" }, tag);
+        if (i < totalSlides) {
+            tl.to(`#${slidePrefix}-${i} .from-left`, { x: -300, opacity: 0, duration: 1.2, ease: "power2.in" }, stepTime + 1.6)
+              .to(`#${slidePrefix}-${i} .from-right`, { x: 300, opacity: 0, duration: 1.2, ease: "power2.in" }, stepTime + 1.6);
         }
-
-        tl.to(`#${slidePrefix}-${prev} .from-left`, { x: -300, opacity: 0, duration: 1.4, ease: "power2.in" }, tag)
-          .to(`#${slidePrefix}-${prev} .from-right`, { x: 300, opacity: 0, duration: 1.4, ease: "power2.in" }, tag)
-          .to(`#${slidePrefix}-${i} .from-left`, { x: 0, opacity: 1, duration: 2, ease: "power2.out" }, `${tag}+=0.5`)
-          .to(`#${slidePrefix}-${i} .from-right`, { x: 0, opacity: 1, duration: 2, ease: "power2.out" }, `${tag}+=0.5`)
-          .to({}, { duration: 1.2 });
     }
-
-    const lastTag = `step${totalSlides}`;
-    const prevLast = totalSlides - 1;
-
-    tl.to(`#${slidePrefix}-${prevLast} .from-left`, { x: -300, opacity: 0, duration: 1.4, ease: "power2.in" }, lastTag)
-      .to(`#${slidePrefix}-${prevLast} .from-right`, { x: 300, opacity: 0, duration: 1.4, ease: "power2.in" }, lastTag)
-      .to(planetMesh.position, { x: -6, y: -3, duration: 2, ease: "power1.inOut" }, lastTag)
-      .to(`#${slidePrefix}-${totalSlides} .from-left`, { x: 0, opacity: 1, duration: 2, ease: "power2.out" }, `${lastTag}+=0.5`)
-      .to(`#${slidePrefix}-${totalSlides} .from-right`, { x: 0, opacity: 1, duration: 2, ease: "power2.out" }, `${lastTag}+=0.5`)
-      .to({}, { duration: 1.2 });
-
-    tl.to(`#${slidePrefix}-${totalSlides} .from-left`, { x: -300, opacity: 0, duration: 1.4, ease: "power2.in" }, "exit")
-      .to(`#${slidePrefix}-${totalSlides} .from-right`, { x: 300, opacity: 0, duration: 1.4, ease: "power2.in" }, "exit")
-      .to(planetMesh.position, { x: -24, y: -12, duration: 2, ease: "power1.in" }, "exit");
 }
 
 buildSmoothPlanetScene("#mars", mars, "mars-slide", 7);
 buildSmoothPlanetScene("#moon", moon, "moon-slide", 7);
 
+// ==========================================
+// ЛІТАЮЧІ МЕТЕОРИТИ ВИКЛЮЧНО В ШАПЦІ
+// ==========================================
+function initHeroMeteors() {
+    const container = document.querySelector('.meteors-container');
+    if (!container) return;
+
+    const meteorCount = 6; // Кількість одночасних метеоритів
+
+    for (let i = 0; i < meteorCount; i++) {
+        createMeteor(container, true);
+    }
+}
+
+function createMeteor(container, randomDelay = false) {
+    const meteor = document.createElement('div');
+    meteor.className = 'meteor';
+    
+    // Випадкові параметри появи
+    const startX = Math.random() * window.innerWidth;
+    const startY = Math.random() * (window.innerHeight * 0.4); // З'являються ближче до верхньої частини шапки
+    const duration = 1.5 + Math.random() * 2.5; // Швидкість польоту
+    const delay = randomDelay ? Math.random() * 4 : 0;
+    const size = 1 + Math.random() * 1.5;
+
+    meteor.style.left = `${startX}px`;
+    meteor.style.top = `${startY}px`;
+    meteor.style.width = `${size * 60}px`; // довжина хвоста
+    meteor.style.height = `${size}px`;
+    meteor.style.animationDuration = `${duration}s`;
+    meteor.style.animationDelay = `${delay}s`;
+
+    container.appendChild(meteor);
+
+    // Перестворення метеорита після завершення анімації
+    setTimeout(() => {
+        meteor.remove();
+        createMeteor(container, false);
+    }, (duration + delay) * 1000);
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+    switchResearchPlanet('mars');
+    initHeroMeteors(); // Запускаємо метеорити в шапці
+});
 
 // ==========================================
-// 3. МОДАЛЬНІ ВІКНА
+// 2. ДАНИ ТА КРУГОВА КАРУСЕЛЬ ФОТО NASA
+// ==========================================
+const researchData = {
+    mars: {
+        tag: "ЧЕРВОНА ПЛАНЕТА • МАРС",
+        title: "Чому людство досліджує Марс?",
+        why: "Марс є найближчою до Землі планетою, умови на якій колись були схожими на земні. Головна мета вивчення — з'ясувати, чи існувало там давнє мікробіологічне життя, та зрозуміти, чому планета втратила свою атмосферу й вологу.",
+        help: "Дослідження Марса дає уявлення про глобальні зміни клімату на Землі. Крім того, розробка технологій для виживання у суворих марсіанських умовах стимулює інновації в медицині, робототехніці, генерації енергії та готує людство до майбутніх пілотованих польотів.",
+        photos: [
+            { url: "https://svs.gsfc.nasa.gov/vis/a030000/a031300/a031343/mars_PIA26551_zoom_and_pan_1920x1080.png", caption: "Панорама марсіанського пейзажу від марсохода Curiosity" },
+            { url: "https://svs.gsfc.nasa.gov/vis/a010000/a011800/a011875/WC_MarsSunset-1920-MASTER_iPad_1920x0180_print.jpg", caption: "Захід сонця на Марсі (знімок марсохода Curiosity)" },
+            { url: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTFm9N3slyAKZgkHrzy7zws8rd0MxF63cbtFOdvhuhcVkOQMypgR6-F6TI&s=10", caption: "Марсіанські дюни та скельні утворення в кратері Єзеро" },
+            { url: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSvta42tVbeRdCaAeysM4N_pCBr36gRdM-xakRJhE7gQRYkReyyJIycGZQM&s=10", caption: "Глобальний вигляд поверхні Марса з орбіти" },
+            { url: "https://images.mentoday.ru/upload/img_cache/3e7/3e779041b1b617df0e72bc7d74327b66_ce_666x444x0x0.jpg", caption: "Кратер Гейл, зазнімкований орбітальним апаратом" }
+        ]
+    },
+    moon: {
+        tag: "СУПУТНИК ЗЕМЛІ • МІСЯЦЬ",
+        title: "Чому людство досліджує Місяць?",
+        why: "Місяць — найближчий космічний об'єкт і природний форпост для вивчення глибокого космосу. Вивчення його геології допомагає розкрити таємниці ранньої історії формування Землі та всієї Сонячної системи.",
+        help: "Місяць слугує унікальним майданчиком для тестування новітніх космічних технологій, видобутку ресурсів (зокрема водного льоду) та створення майбутніх наукових баз для подальших польотів на Марс і далі у Всесвіт.",
+        photos: [
+            { url: "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/98/Aldrin_Apollo_11_original.jpg/250px-Aldrin_Apollo_11_original.jpg?utm_source=uk.wikipedia.org&utm_campaign=parser&utm_content=thumbnail", caption: "Астронавт Базз Олдрін на поверхні Місяця (Apollo 11)" },
+            { url: "https://images-assets.nasa.gov/image/PIA00405/PIA00405~medium.jpg", caption: "Зворотний бік Місяця у високій деталізації" },
+            { url: "https://preview.redd.it/earthset-first-photo-from-the-far-side-of-the-moon-captured-v0-9bfk4p4rjrtg1.jpeg?auto=webp&s=a1f1c73eb812b62b6f150e41368d67cab0b71b7d", caption: "Схід Землі над місячним горизонтом (Apollo 17)" },
+            { url: "https://socportal.info/site/assets/files/0/07/10/423/mcgetchin-new-lunar-crater.780x480.jpg?3idfkp", caption: "Кратери та деталі рельєфу від Lunar Reconnaissance Orbiter" },
+            { url: "https://24tv.ua/resources/photos/news/202305/2318322.jpg?v=1684740585000", caption: "Місячний модуль на тлі гірського масиву Декарт" }
+        ]
+    }
+};
+
+let currentCarouselIndex = 0;
+let activePlanetKey = 'mars';
+
+function switchResearchPlanet(planetKey) {
+    activePlanetKey = planetKey;
+    currentCarouselIndex = 0;
+
+    document.querySelectorAll('.planet-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.textContent.toLowerCase().includes(planetKey === 'mars' ? 'марс' : 'місяць'));
+    });
+
+    const data = researchData[planetKey];
+    document.getElementById('research-tag').innerText = data.tag;
+    document.getElementById('research-title').innerText = data.title;
+    document.getElementById('research-why').innerText = data.why;
+    document.getElementById('research-help').innerText = data.help;
+
+    renderCarousel(data.photos);
+}
+
+// ==========================================
+// 3. АДАПТОВАНИЙ SWIPER ДЛЯ КАРУСЕЛІ
+// ==========================================
+let researchSwiper = null;
+
+function renderCarousel(photos) {
+    const track = document.getElementById('carousel-track');
+    track.className = 'swiper-wrapper';
+    track.innerHTML = '';
+    
+    photos.forEach(photo => {
+        const slide = document.createElement('div');
+        slide.className = 'swiper-slide carousel-slide';
+        slide.innerHTML = `
+            <img src="${photo.url}" alt="${photo.caption}">
+            <div class="carousel-caption">${photo.caption}</div>
+        `;
+        track.appendChild(slide);
+    });
+
+    if (typeof Swiper !== 'undefined') {
+        if (researchSwiper) {
+            researchSwiper.destroy(true, true);
+        }
+        
+        researchSwiper = new Swiper('.carousel-viewport', {
+            loop: true,
+            grabCursor: true,
+            simulateTouch: true,
+            spaceBetween: 20,
+            navigation: {
+                nextEl: '.next-btn',
+                prevEl: '.prev-btn',
+            },
+            breakpoints: {
+                0: { slidesPerView: 1, spaceBetween: 15 },
+                600: { slidesPerView: 2, spaceBetween: 20 },
+                950: { slidesPerView: 3, spaceBetween: 25 }
+            }
+        });
+    }
+}
+
+function moveCarousel(direction) {
+    if (!researchSwiper) return;
+    if (direction > 0) {
+        researchSwiper.slideNext();
+    } else {
+        researchSwiper.slidePrev();
+    }
+}
+
+// ==========================================
+// 4. МОДАЛЬНІ ВІКНА (ІСТОРІЇ МІСІЙ)
 // ==========================================
 const storiesData = {
-    opportunity: {
-        tag: "МАРС • 2004–2018",
-        title: "Марсохід Opportunity (MER-B)",
-        status: "Статус: Долина Наполегливості (Заснув під час бурі)",
-        text: `
-            <p><strong>Мета місії:</strong> Геологічна розвідка Марса у пошуках мінеральних слідів присутності рідкої води в минулому. Інженери закладали ресурс у 90 солів і пробіг 1 кілометр.</p>
-            <p><strong>Інженерний рекорд:</strong> Opportunity пропрацював майже <strong>15 земних років</strong> і подолав <strong>45,16 км</strong>! Його сонячні панелі очищалися від пилу марсіанськими вихорами.</p>
-            <p><strong>Головне відкриття:</strong> Ровер виявив сферичні конкреції гематиту («марсіанську чорницю»), які формуються виключно у воді, довівши, що давній Марс мав озера.</p>
-            <p><strong>Фінал:</strong> У червні 2018 року планету накрила глобальна пилова буря. Останні дані ровера інженери переклали як: <em>«Моя батарея сідає, і стає темно»</em>.</p>
-        `
+    opportunity: { 
+        tag: "МАРС • 2004–2018", 
+        title: "Марсохід Opportunity", 
+        status: "Статус: Долина Наполегливості (Завершено)", 
+        text: `<p>Марсохід Opportunity (MER-B) здійснив посадку на Марс 25 січня 2004 року...</p>` 
     },
-    ingenuity: {
-        tag: "МАРС • 2021–2024",
-        title: "Гелікоптер Ingenuity",
-        status: "Статус: Дюни Єзеро (Пошкоджена лопать)",
-        text: `
-            <p><strong>Мета місії:</strong> Перевірити можливість керованого польоту в розрідженій атмосфері Марса (1% від земної).</p>
-            <p><strong>Інженерний прорив:</strong> Карбонові лопаті оберталися зі швидкістю <strong>2500 об/хв</strong>. Замість 5 тестових польотів дрон виконав <strong>72 польоти</strong>.</p>
-            <p><strong>Фінал:</strong> У січні 2024 року при посадці на піщану дюну пошкодилася кінцівка лопаті. Зараз апарат працює як нерухома метеостанція.</p>
-        `
-    },
-    insight: {
-        tag: "МАРС • 2018–2022",
-        title: "Посадковий модуль InSight",
-        status: "Статус: Рівнина Елізій (Покритий пилом)",
-        text: `
-            <p><strong>Мета місії:</strong> Перше глибоке сейсмічне дослідження внутрішньої будови Марса.</p>
-            <p><strong>Наукове відкриття:</strong> Надчутливий сейсмометр SEIS зареєстрував понад <strong>1300 марсотрусів</strong>, що дозволило визначити розмір розплавленого ядра планети.</p>
-            <p><strong>Фінал:</strong> У грудні 2022 року марсіанський пил повністю вкрив сонячні панелі, і апарат завершив роботу.</p>
-        `
-    },
-    spirit: {
-        tag: "МАРС • 2004–2010",
-        title: "Марсохід Spirit (MER-A)",
-        status: "Статус: Пагорби Колумбії, кратер Гусєва",
-        text: `
-            <p><strong>Мета місії:</strong> Пошук ознак давньої водної активності на протилежному боці планети від Opportunity.</p>
-            <p><strong>Відкриття:</strong> Знайшов поклади чистого кремнезему та карбонатів — доказ того, що колись у кратері Гусєва вирували гідротермальні джерела.</p>
-            <p><strong>Фінал:</strong> У 2009 році праве переднє колесо провалилося у пухкий сульфатний пісок. Ровер ще рік передавав дані як нерухома наукова станція до настання марсіанської зими.</p>
-        `
-    },
-    viking1: {
-        tag: "МАРС • 1976–1982",
-        title: "Посадковий модуль Viking 1",
-        status: "Статус: Рівнина Хриса (Станція пам'яті Томаса Матча)",
-        text: `
-            <p><strong>Історичний прорив:</strong> Перший космічний апарат, який успішно виконав повну програму досліджень на поверхні Марса і передав кольорові панорами.</p>
-            <p><strong>Рекорд тривалості:</strong> Пропрацював 2245 марсіанських солів (понад 6 років), утримуючи рекорд довголіття до 2010 року.</p>
-        `
-    },
-    sojourner: {
-        tag: "МАРС • 1997",
-        title: "Mars Pathfinder та ровер Sojourner",
-        status: "Статус: Долина Арес",
-        text: `
-            <p><strong>Інженерія:</strong> Використав революційну систему посадки на надувних подушках. Шестиколісний робот Sojourner важив лише 10,6 кг.</p>
-            <p><strong>Результати:</strong> Замість запланованого тижня пропрацював 83 дні, проаналізувавши хімічний склад марсіанських каменів альфа-протонним спектрометром.</p>
-        `
-    },
-    phoenix: {
-        tag: "МАРС • 2008",
-        title: "Полярний посадковий зонд Phoenix",
-        status: "Статус: Північний полярний регіон Марса",
-        text: `
-            <p><strong>Головний доказ:</strong> Роботизована рука-маніпулятор зняла верхній шар ґрунту на глибину 5 см і відкрила яскравий водяний лід, який за кілька днів сублімував на сонці.</p>
-            <p><strong>Погода на полюсі:</strong> Лазерний лідар зафіксував сніг, що падав із хмар на висоті 4 км над поверхнею.</p>
-        `
-    },
-    apollo11: {
-        tag: "МІСЯЦЬ • 1969",
-        title: "Посадковий модуль Apollo 11 («Орел»)",
-        status: "Статус: Море Спокою",
-        text: `
-            <p><strong>Історичний артефакт:</strong> Нижній посадковий ступінь модуля досі стоїть на місці першої висадки людини з табличкою: <em>«Ми прийшли з миром від імені всього людства»</em>.</p>
-            <p><strong>Науковий слід:</strong> Через відсутність атмосфери та вітру сліди астронавтів у місячному реголіті збережуться мільйони років.</p>
-        `
-    },
-    lrrrs: {
-        tag: "МІСЯЦЬ • 1969–ДОТЕПЕР",
-        title: "Лазерні кутові відбивачі (LRRR)",
-        status: "Статус: АКТИВНІ (Працюють до сьогодні!)",
-        text: `
-            <p><strong>Як це працює:</strong> Спеціальні панелі з кварцових призм повертають лазерний промінь точно назад до обсерваторії на Землі.</p>
-            <p><strong>Науковий результат:</strong> Це єдине обладнання епохи Apollo, яке працює досі. Завдяки йому вчені виміряли, що Місяць віддаляється від Землі на <strong>3,8 см щороку</strong>.</p>
-        `
-    },
-    lrv: {
-        tag: "МІСЯЦЬ • 1971–1972",
-        title: "Місячний електромобіль LRV",
-        status: "Статус: Місця посадок Apollo 15, 16, 17",
-        text: `
-            <p><strong>Інженерія:</strong> Повнопривідний електромобіль вагою 210 кг, який складався у валізу всередині посадкового модуля і розвивав швидкість до 18 км/год.</p>
-            <p><strong>Спадщина:</strong> Перед відльотом екіпажі залишали ровери на відстані 100 метрів, щоб їхні камери зняли зліт ракети з Місяця.</p>
-        `
-    },
-    surveyor3: {
-        tag: "МІСЯЦЬ • 1967 / 1969",
-        title: "Зонд Surveyor 3 та візит Apollo 12",
-        status: "Статус: Океан Бур",
-        text: `
-            <p><strong>Унікальна зустріч:</strong> У листопаді 1969 року екіпаж Apollo 12 здійснив точкову посадку за 160 метрів від безпілотного апарата Surveyor 3, що сів там у 1967 році.</p>
-            <p><strong>Дослідження:</strong> Астронавти демонтували телекамеру та совок зонда і повернули їх на Землю, щоб вивчити, як 31 місяць у вакуумі та радіації вплинули на матеріали.</p>
-        `
-    },
-    alsep: {
-        tag: "МІСЯЦЬ • 1969–1977",
-        title: "Наукові станції ALSEP",
-        status: "Статус: П'ять посадкових майданчиків Apollo",
-        text: `
-            <p><strong>Автономна мережа:</strong> Кожна експедиція від Apollo 12 до Apollo 17 залишала комплекс приладів із ядерним джерелом живлення SNAP-27.</p>
-            <p><strong>Відкриття:</strong> Сейсмометри зафіксували глибокі припливні місяцетруси та довели, що Місяць має тверде внутрішнє та рідке зовнішнє ядро.</p>
-        `
-    },
-    grail: {
-        tag: "МІСЯЦЬ • 2011–2012",
-        title: "Зонди-близнюки GRAIL (Ebb і Flow)",
-        status: "Статус: Кратер Саллі Райд (Північний полюс)",
-        text: `
-            <p><strong>Принцип роботи:</strong> Два апарати літали на низькій орбіті один за одним, вимірюючи найменші зміни відстані між собою через гравітаційні аномалії кори Місяця.</p>
-            <p><strong>Фінал:</strong> 17 грудня 2012 року зонди завершили місію контрольованим зіткненням із гірським схилом поблизу кратера Гольдшмідт.</p>
-        `
-    },
-    lcross: {
-        tag: "МІСЯЦЬ • 2009",
-        title: "Ударний зонд LCROSS",
-        status: "Статус: Вічно затінений кратер Кабеус",
-        text: `
-            <p><strong>Експеримент:</strong> Розгінний ступінь Centaur масою понад 2 тонни врізався у дно кратера на швидкості 9000 км/год, а слідом пролетів науковий зонд LCROSS.</p>
-            <p><strong>Знахідка:</strong> Аналіз викинутого шлейфу підтвердив значні запаси водяного льоду, аміаку та метану на південному полюсі Місяця.</p>
-        `
-    }
+    ingenuity: { tag: "МАРС • 2021–2024", title: "Гелікоптер Ingenuity", status: "Статус: Кратер Єзеро (Завершено)", text: `<p>Ingenuity став справжньою технологічною революцією...</p>` },
+    insight: { tag: "МАРС • 2018–2022", title: "Посадковий модуль InSight", status: "Статус: Рівнина Елізій (Завершено)", text: `<p>InSight — перший стаціонарний геофізичний апарат...</p>` },
+    spirit: { tag: "МАРС • 2004–2010", title: "Марсохід Spirit", status: "Статус: Кратер Гусєва (Завершено)", text: `<p>Spirit — легендарний близнюк марсохода Opportunity...</p>` },
+    viking1: { tag: "МАРС • 1976–1982", title: "Посадковий модуль Viking 1", status: "Статус: Рівнина Хриса (Завершено)", text: `<p>Viking 1 став триумфом американської космічної програми...</p>` },
+    sojourner: { tag: "МАРС • 1997", title: "Pathfinder та ровер Sojourner", status: "Статус: Долина Арес (Завершено)", text: `<p>Місія Mars Pathfinder у липні 1997 року назавжди змінила підхід...</p>` },
+    phoenix: { tag: "МАРС • 2008", title: "Полярний зонд Phoenix", status: "Статус: Арктична рівнина (Завершено)", text: `<p>Посадковий зонд Phoenix здійснив ризиковану посадку...</p>` },
+    apollo11: { tag: "МІСЯЦЬ • 1969", title: "Посадковий ступінь «Орел» (Apollo 11)", status: "Статус: Море Спокою (Об'єкт спадщини)", text: `<p>Нижня платформа місячного модуля «Орел»...</p>` },
+    lrrrs: { tag: "МІСЯЦЬ • 1969–ДОТЕПЕР", title: "Лазерні кутові відбивачі", status: "Статус: Активні (Працюють і досі)", text: `<p>Лазерні кутові відбивачі (LRRR) — це унікальне наукове обладнання...</p>` },
+    lrv: { tag: "МІСЯЦЬ • 1971–1972", title: "Місячний електромобіль LRV", status: "Статус: Місця посадок Apollo 15, 16, 17", text: `<p>Lunar Roving Vehicle (LRV) — це перший пілотований позашляховик...</p>` },
+    surveyor3: { tag: "МІСЯЦЬ • 1967", title: "Автоматичний зонд Surveyor 3", status: "Статус: Океан Бур", text: `<p>Зонд Surveyor 3 здійснив успішну м'яку посадку...</p>` },
+    alsep: { tag: "МІСЯЦЬ • 1969–1977", title: "Наукові комплекси ALSEP", status: "Статус: Місця посадок Apollo", text: `<p>ALSEP — це цілі комплекси автономних наукових лабораторій...</p>` },
+    grail: { tag: "МІСЯЦЬ • 2011–2012", title: "Зонди-близнюки GRAIL (Ebb і Flow)", status: "Статус: Кратер Саллі Райд (Завершено)", text: `<p>Місія GRAIL складалася з двох майже однакових космічних апаратів...</p>` },
+    lcross: { tag: "МІСЯЦЬ • 2009", title: "Ударний зонд LCROSS", status: "Статус: Кратер Кабеус (Завершено)", text: `<p>Місія LCROSS була розроблена для вирішення однієї з найбільших загадок...</p>` }
 };
 
 function openModal(id) {
@@ -530,246 +431,10 @@ function openModal(id) {
     document.getElementById('story-modal').style.display = 'flex';
 }
 
-function closeModal() {
-    document.getElementById('story-modal').style.display = 'none';
+function closeModal() { 
+    document.getElementById('story-modal').style.display = 'none'; 
 }
 
-window.onclick = function(event) {
-    if (event.target === document.getElementById('story-modal')) closeModal();
+window.onclick = function(e) { 
+    if (e.target === document.getElementById('story-modal')) closeModal(); 
 };
-// ==========================================
-// РЕЖИМ «ЖИВОЇ ТРАНСЛЯЦІЇ» ВІД ПЕРШОЇ ОСОБИ (POV)
-// ==========================================
-(function initLiveTelemetryPOV() {
-    const explorerEl = document.getElementById('explorer');
-    const markersLayer = document.getElementById('markers-layer');
-    const povOverlay = document.getElementById('pov-overlay');
-    const povPanorama = document.getElementById('pov-panorama');
-
-    if (!explorerEl || !markersLayer || !povOverlay) return;
-
-    // База місій із реальними панорамами NASA у високій якості
-    const missionsPOV = {
-        mars: [
-            { 
-                name: 'Opportunity', lat: -2, lon: 354, 
-                cam: 'PANCAM // SOL 5111 // LIVE FEED', 
-                img: 'https://images-assets.nasa.gov/image/PIA17767/PIA17767~large.jpg', 
-                'text': '«Пряма трансляція з кратера Індевор. Небо затягнуте глобальною пиловою бурею. Сонячні панелі фіксують критичне падіння напруги, сигнал повільно згасає...» '
-            },
-            { 
-                name: 'Ingenuity', lat: 18, lon: 77, 
-                cam: 'RTE COLOR CAM // FLIGHT 72 // ACTIVE', 
-                img: 'https://images-assets.nasa.gov/image/PIA24647/PIA24647~large.jpg', 
-                text: '«Вид з бортової навігаційної камери гелікоптера на дюни кратера Єзеро. Лопаті на піску, але цифрова телеметрія передає дані про атмосферний тиск.»' 
-            },
-            { 
-                name: 'InSight', lat: 4.5, lon: 135, 
-                cam: 'IDC CONTEXT CAM // SOL 1440', 
-                img: 'https://images-assets.nasa.gov/image/PIA22849/PIA22849~large.jpg', 
-                text: '«Телеметричний знімок з Рівнини Елізій. Сейсмометр фіксує тишу, сонячні панелі вкриті товстим шаром марсіанського пилу.»' 
-            },
-            { 
-                name: 'Spirit', lat: -14.5, lon: 175, 
-                cam: 'NAVCAM // TROY TRAP', 
-                img: 'https://images-assets.nasa.gov/image/PIA04413/PIA04413~large.jpg', 
-                text: '«Панорама з місця вимушеної стоянки біля пагорбів Колумбії. Похил корпусу становить 13 градусів, енергосистема працює у стаціонарному режимі.»' 
-            },
-            { 
-                name: 'Viking 1', lat: 22.5, lon: 312, 
-                cam: 'FACSIMILE CAM // ARCHIVE STREAM', 
-                img: 'https://images-assets.nasa.gov/image/PIA00563/PIA00563~large.jpg', 
-                text: '«Історичний архівний потік першої успішної місії на Рівнині Хриса. Бездоганна чорно-біла панорама марсіанського горизонту 1976 року.»' 
-            },
-            { 
-                name: 'Sojourner', lat: 19.3, lon: 326, 
-                cam: 'IMP ROVER CAM // 1997', 
-                img: 'https://images-assets.nasa.gov/image/PIA01122/PIA01122~large.jpg', 
-                text: '«Вид з платформи Pathfinder на мікро-ровер Sojourner біля валуна Йогі під час першої у світі експедиції колісного робота на Марсі.»' 
-            },
-            { 
-                name: 'Phoenix', lat: 68.2, lon: 234, 
-                cam: 'SSI ARCTIC CAM // SOL 150', 
-                img: 'https://images-assets.nasa.gov/image/PIA10742/PIA10742~large.jpg', 
-                text: '«Трансляція з полярного регіону. Роботизований ківш демонструє відкритий під поверхнею білий водяний лід під світлом полярного сонця.»' 
-            }
-        ],
-        moon: [
-            { 
-                name: 'Apollo 11 «Орел»', lat: 0.7, lon: 23.5, 
-                cam: 'HASSELBLAD ARCHIVE // SEA OF TRANQUILITY', 
-                img: 'https://images-assets.nasa.gov/image/as11-40-5903/as11-40-5903~large.jpg', 
-                text: '«Прямий ефір з Моря Спокою. Посадковий ступінь “Орел” нерухомо стоїть у місячному реголіті під чорним безповітряним небом.»' 
-            },
-            { 
-                name: 'Лазерний відбивач', lat: 3.6, lon: 342.5, 
-                cam: 'OPTICAL PRISM FEED // ACTIVE', 
-                img: 'https://images-assets.nasa.gov/image/S71-42358/S71-42358~large.jpg', 
-                text: '«Сигнал лазерного дальноміра із Землі зафіксовано. Кварцові призми відбивають світлові імпульси для вимірювання орбіти.»' 
-            },
-            { 
-                name: 'Ровер LRV', lat: 26.1, lon: 3.6, 
-                cam: 'GCTA TV CAM // APOLLO 15', 
-                img: 'https://images-assets.nasa.gov/image/as15-88-11901/as15-88-11901~large.jpg', 
-                text: '«Трансляція з місячного електромобіля біля підніжжя Апеннін. На задньому плані видніється темна борозна Гедлі.»' 
-            },
-            { 
-                name: 'Surveyor 3', lat: -3.0, lon: 336.6, 
-                cam: 'VIDICON CAM // 1969 VISIT', 
-                img: 'https://images-assets.nasa.gov/image/as12-48-7136/as12-48-7136~large.jpg', 
-                text: '«Архівний кадр обстеження апарата Surveyor 3 екіпажем Apollo 12 в Океані Бур перед демонтажем бортової камери.»' 
-            },
-            { 
-                name: 'Станція ALSEP', lat: -3.5, lon: 337.0, 
-                cam: 'SNAP-27 TELEMETRY STREAM', 
-                img: 'https://images-assets.nasa.gov/image/as12-47-6913/as12-47-6913~large.jpg', 
-                text: '«Науковий комплекс передає дані сейсмічних коливань кори Місяця через ядерне джерело живлення.»' 
-            },
-            { 
-                name: 'Зонди GRAIL', lat: 75.6, lon: 333.4, 
-                cam: 'MOONKAM ORBITAL STREAM', 
-                img: 'https://images-assets.nasa.gov/image/PIA16587/PIA16587~large.jpg', 
-                text: '«Гравітаційна карта високої чіткості, отримана зондами-близнюками під час низькоорбітального польоту над полюсом.»' 
-            },
-            { 
-                name: 'Зонд LCROSS', lat: -84.7, lon: 311.3, 
-                cam: 'NIR SPECTROMETER // IMPACT', 
-                img: 'https://images-assets.nasa.gov/image/PIA12189/PIA12189~large.jpg', 
-                text: '«Спектральний аналіз викинутої хмари у вічно затіненому кратері Кабеус. Підтверджено спектр водяної пари.»' 
-            }
-        ]
-    };
-
-    let currentPlanet = 'mars';
-    let radarVisible = false;
-    let dragging = false;
-    let prevX = 0, prevY = 0;
-
-    function getSpherePos(lat, lon, r) {
-        const phi = (90 - lat) * (Math.PI / 180);
-        const theta = (lon + 180) * (Math.PI / 180);
-        return new THREE.Vector3(
-            -(r * Math.sin(phi) * Math.cos(theta)),
-            r * Math.cos(phi),
-            r * Math.sin(phi) * Math.sin(theta)
-        );
-    }
-
-    function buildMarkers(planetKey) {
-        markersLayer.innerHTML = '';
-        missionsPOV[planetKey].forEach(item => {
-            const el = document.createElement('div');
-            el.className = `pin-marker ${planetKey === 'mars' ? 'mars-pin' : ''}`;
-            el.innerHTML = `<span class="pin-dot"></span><span class="pin-label">${item.name}</span>`;
-            el.onclick = () => openPOV(item);
-            markersLayer.appendChild(el);
-        });
-    }
-
-    window.setExplorerPlanet = function(planetKey) {
-        currentPlanet = planetKey;
-        document.querySelectorAll('.planet-btn').forEach(b => {
-            b.classList.toggle('active', b.dataset.planet === planetKey);
-        });
-        if (radarVisible) {
-            mars.visible = (planetKey === 'mars');
-            moon.visible = (planetKey === 'moon');
-            const mesh = planetKey === 'mars' ? mars : moon;
-            gsap.to(mesh.position, { x: 2.2, y: -0.2, z: 0, duration: 0.7 });
-        }
-        buildMarkers(planetKey);
-    };
-
-    window.openPOV = function(item) {
-        document.getElementById('pov-cam').innerText = item.cam;
-        document.getElementById('pov-title').innerText = item.name;
-        document.getElementById('pov-text').innerText = item.text;
-        
-        // Ефект підключення прямої трансляції (коротке мерехтіння)
-        povPanorama.style.opacity = '0';
-        povPanorama.style.backgroundImage = `url('${item.img}')`;
-        povOverlay.style.display = 'block';
-        
-        gsap.to(povPanorama, { opacity: 1, duration: 0.5 });
-    };
-
-    window.closePOV = function() {
-        povOverlay.style.display = 'none';
-    };
-
-    // Паралакс-ефект «огляду камерою» мишею в режимі трансляції
-    povOverlay.addEventListener('mousemove', (e) => {
-        const dx = ((e.clientX / window.innerWidth) - 0.5) * -30;
-        const dy = ((e.clientY / window.innerHeight) - 0.5) * -20;
-        povPanorama.style.transform = `translate(${dx}px, ${dy}px) scale(1.05)`;
-    });
-
-    explorerEl.addEventListener('mousedown', (e) => {
-        if (e.target.closest('.pin-marker') || e.target.closest('.planet-btn')) return;
-        dragging = true;
-        prevX = e.clientX;
-        prevY = e.clientY;
-    });
-
-    window.addEventListener('mousemove', (e) => {
-        if (!dragging || !radarVisible) return;
-        const mesh = currentPlanet === 'mars' ? mars : moon;
-        mesh.rotation.y += (e.clientX - prevX) * 0.006;
-        mesh.rotation.x = THREE.MathUtils.clamp(mesh.rotation.x + (e.clientY - prevY) * 0.004, -0.8, 0.8);
-        prevX = e.clientX;
-        prevY = e.clientY;
-    });
-
-    window.addEventListener('mouseup', () => { dragging = false; });
-
-    ScrollTrigger.create({
-        trigger: "#explorer",
-        start: "top 60%",
-        end: "bottom top",
-        onEnter: () => { radarVisible = true; setExplorerPlanet(currentPlanet); },
-        onLeave: () => { radarVisible = false; mars.visible = false; moon.visible = false; },
-        onEnterBack: () => { radarVisible = true; setExplorerPlanet(currentPlanet); },
-        onLeaveBack: () => { radarVisible = false; mars.visible = false; moon.visible = false; }
-    });
-
-    function syncMarkers() {
-        requestAnimationFrame(syncMarkers);
-        if (!radarVisible) {
-            markersLayer.style.display = 'none';
-            return;
-        }
-        markersLayer.style.display = 'block';
-
-        const mesh = currentPlanet === 'mars' ? mars : moon;
-        const list = missionsPOV[currentPlanet];
-        const pins = markersLayer.querySelectorAll('.pin-marker');
-
-        mesh.updateMatrixWorld();
-        const center = new THREE.Vector3();
-        mesh.getWorldPosition(center);
-
-        list.forEach((item, i) => {
-            const pin = pins[i];
-            if (!pin) return;
-
-            const worldPos = getSpherePos(item.lat, item.lon, 3.22).applyMatrix4(mesh.matrixWorld);
-            const normal = worldPos.clone().sub(center).normalize();
-            const toCam = camera.position.clone().sub(worldPos).normalize();
-            const dot = normal.dot(toCam);
-
-            if (dot > 0.1) {
-                const screen = worldPos.clone().project(camera);
-                pin.style.left = `${(screen.x * 0.5 + 0.5) * window.innerWidth}px`;
-                pin.style.top = `${(-(screen.y * 0.5) + 0.5) * window.innerHeight}px`;
-                pin.style.opacity = Math.min(1, dot * 2.5);
-                pin.style.pointerEvents = 'auto';
-            } else {
-                pin.style.opacity = '0';
-                pin.style.pointerEvents = 'none';
-            }
-        });
-    }
-
-    buildMarkers('mars');
-    syncMarkers();
-})();
