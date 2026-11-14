@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NASA: Мовчазні дослідники Сонячної системи</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <!-- 3D Полотно на весь екран -->
+    <canvas id="space-canvas"></canvas>
+
+    <!-- Навігація -->
+    <nav class="navbar">
+        <div class="logo">NASA<span>ARCHIVE</span></div>
+        <div class="nav-links">
+            <a href="#about">Філософія</a>
+            <a href="#nasa-company">NASA</a>
+            <a href="#mars">Марс</a>
+            <a href="#moon">Місяць</a>
+            <a href="#explorer">3D Радар</a>
+        </div>
+    </nav>
+
+    <!-- ЕКРАН 1: HERO -->
+    <header class="hero section">
+        <div class="hero-content">
+            <span class="badge">NASA SPACE APPS CHALLENGE</span>
+            <h1>Історії залишеного обладнання</h1>
+            <p class="subtitle">Понад пів століття людство надсилає дивовижні машини на інші планети. Коли місії завершуються, вони залишаються стояти у мовчанні як пам'ятники науці.</p>
+            <div class="scroll-hint"><a class="scroll-link" href="#about">Гортай вниз, щоб дослідити артефакти ↓</a></div>
+        </div>
+    </header>
+
+    <!-- ЕКРАН 2: ФІЛОСОФІЯ -->
+    <section id="about" class="section">
+        <div class="card slide-left">
+            <span class="tag">ФІЛОСОФІЯ ПРОЄКТУ</span>
+            <h2 class="section-title">Музеї під відкритим небом у космосі</h2>
+            <p>
+                Коли ми думаємо про космос, то зазвичай уявляємо запуски ракет або прямі трансляції з чинних марсоходів. Але поверхня Місяця та Марса — це справжні <strong>археологічні музеї людства</strong>.
+            </p>
+            <p>
+                Ми перетворюємо сухі технічні звіти на живі історії апаратів, які назавжди залишилися серед зірок.
+            </p>
+        </div>
+    </section>
+
+    <!-- ЕКРАН 3: АНАТОМІЯ NASA (З СОНЦЕМ) -->
+    <section id="nasa-company" class="section">
+        <div class="nasa-company-container">
+            <div class="section-header slide-left">
+                <span class="tag">АГЕНТСТВО СВІТОВОГО МАСШТАБУ</span>
+                <h2 class="section-title">Анатомія NASA: Як народжуються місії</h2>
+            </div>
+            
+            <p class="nasa-lead slide-left">
+                Засноване у 1958 році, NASA об'єднує тисячі інженерів та науковців, щоб відправляти роботів-розвідників туди, куди людина ще не може ступити.
+            </p>
+
+            <div class="nasa-grid">
+                <div class="nasa-info-card slide-left">
+                    <div class="card-icon">🚀</div>
+                    <h3>Інженерний авангард</h3>
+                    <p>Створення машин, які витримують вакуум, радіацію та перепади температур у сотні градусів.</p>
+                </div>
+                <div class="nasa-info-card slide-left">
+                    <div class="card-icon">🛰️</div>
+                    <h3>Планетарна наука</h3>
+                    <p>Вивчення інших планет розкриває історію формування нашої Землі та шанси на життя у Всесвіті.</p>
+                </div>
+                <div class="nasa-info-card slide-left">
+                    <div class="card-icon">💡</div>
+                    <h3>Спадщина для Землі</h3>
+                    <p>Космічні сенсори, камери та системи життєзабезпечення щодня працюють у медицині та побуті.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ЕКРАН 4: МАРС -->
+    <section id="mars" class="pin-section">
+        <div class="scene-header">
+            <span class="tag mars-tag">ЧЕРВОНА ПЛАНЕТА • МАРС</span>
+            <h2 class="section-title">Забуті мандрівники Марса</h2>
+        </div>
+
+        <div class="stage-container">
+            <div class="story-slide" id="mars-slide-1">
+                <div class="slide-media from-left">
+                    <img src="https://images-assets.nasa.gov/image/PIA17767/PIA17767~medium.jpg" alt="Opportunity">
+                    <span class="img-caption">Марсохід Opportunity у кратері Ігл</span>
+                </div>
+                <div class="slide-text from-right">
+                    <span class="years">2004 — 2018 • Долина Наполегливості</span>
+                    <h3>Марсохід Opportunity</h3>
+                    <p>Розрахований на 90 днів роботи, він пропрацював майже 15 років і подолав 45 км, довівши наявність рідкої води на давньому Марсі.</p>
+                    <p class="quote">«Моя батарея сідає, і стає темно»</p>
+                    <button class="btn-more" onclick="openModal('opportunity')">Відкрити бортовий журнал →</button>
+                </div>
+            </div>
+
+            <div class="story-slide" id="mars-slide-2">
+                <div class="slide-media from-left">
+                    <img src="https://images-assets.nasa.gov/image/PIA24647/PIA24647~medium.jpg" alt="Ingenuity">
+                    <span class="img-caption">Перший політ гелікоптера Ingenuity</span>
+                </div>
+                <div class="slide-text from-right">
+                    <span class="years">2021 — 2024 • Кратер Єзеро</span>
+                    <h3>Гелікоптер Ingenuity</h3>
+                    <p>Перший літальний апарат на іншій планеті. Замість 5 тестових стрибків здійснив 72 польоти в атмосфері, щільність якої становить лише 1% від земної.</p>
+                    <button class="btn-more" onclick="openModal('ingenuity')">Відкрити бортовий журнал →</button>
+                </div>
+            </div>
+
+            <div class="story-slide" id="mars-slide-3">
+                <div class="slide-media from-left">
+                    <img src="https://images-assets.nasa.gov/image/PIA22849/PIA22849~medium.jpg" alt="InSight">
+                    <span class="img-caption">Посадковий модуль InSight та сейсмометр</span>
+                </div>
+                <div class="slide-text from-right">
+                    <span class="years">2018 — 2022 • Рівнина Елізій</span>
+                    <h3>Посадковий модуль InSight</h3>
+                    <p>«Стетоскоп» Червоної планети. Записав понад 1300 марсотрусів і вперше визначив товщину кори та розмір ядра Марса, поки пил не вкрив його панелі.</p>
+                    <button class="btn-more" onclick="openModal('insight')">Відкрити бортовий журнал →</button>
+                </div>
+            </div>
+
+            <div class="story-slide" id="mars-slide-4">
+                <div class="slide-media from-left">
+                    <img src="https://images-assets.nasa.gov/image/PIA04413/PIA04413~medium.jpg" alt="Spirit">
+                    <span class="img-caption">Брат-близнюк Spirit у кратері Гусєва</span>
+                </div>
+                <div class="slide-text from-right">
+                    <span class="years">2004 — 2010 • Кратер Гусєва</span>
+                    <h3>Марсохід Spirit</h3>
+                    <p>Першим піднявся на марсіанські пагорби Колумбії та знайшов сліди давніх гарячих джерел. Застряг у м'якому ґрунті Трої, але продовжував працювати як стаціонарна станція.</p>
+                    <button class="btn-more" onclick="openModal('spirit')">Відкрити бортовий журнал →</button>
+                </div>
+            </div>
+
+            <div class="story-slide" id="mars-slide-5">
+                <div class="slide-media from-left">
+                    <img src="https://images-assets.nasa.gov/image/PIA00563/PIA00563~medium.jpg" alt="Viking 1">
+                    <span class="img-caption">Перший чіткий знімок поверхні Марса (1976)</span>
+                </div>
+                <div class="slide-text from-right">
+                    <span class="years">1976 — 1982 • Рівнина Хриса</span>
+                    <h3>Посадковий модуль Viking 1</h3>
+                    <p>Перший американський апарат, що успішно сів на Марс і передав панораму кам'янистої пустелі. Провів перші біологічні тести ґрунту і пропрацював понад 6 років.</p>
+                    <button class="btn-more" onclick="openModal('viking1')">Відкрити бортовий журнал →</button>
+                </div>
+            </div>
+
+            <div class="story-slide" id="mars-slide-6">
+                <div class="slide-media from-left">
+                    <img src="https://images-assets.nasa.gov/image/PIA01122/PIA01122~medium.jpg" alt="Sojourner">
+                    <span class="img-caption">Міні-ровер Sojourner біля валуна Йогі</span>
+                </div>
+                <div class="slide-text from-right">
+                    <span class="years">1997 • Долина Арес</span>
+                    <h3>Pathfinder та ровер Sojourner</h3>
+                    <p>Перший колісний планетохід за межами системи Земля–Місяць. Розміром із мікрохвильову піч, він об'їхав навколо посадкової платформи та довів ефективність навігації роботів.</p>
+                    <button class="btn-more" onclick="openModal('sojourner')">Відкрити бортовий журнал →</button>
+                </div>
+            </div>
+
+            <div class="story-slide" id="mars-slide-7">
+                <div class="slide-media from-left">
+                    <img src="https://images-assets.nasa.gov/image/PIA10742/PIA10742~medium.jpg" alt="Phoenix">
+                    <span class="img-caption">Зонд Phoenix у полярній зоні Марса</span>
+                </div>
+                <div class="slide-text from-right">
+                    <span class="years">2008 • Долина Зелена (Північний полюс)</span>
+                    <h3>Полярний зонд Phoenix</h3>
+                    <p>Розкопав роботизованим ковшем шар ґрунту та на власні очі зафіксував білий водяний лід просто під поверхнею, а також побачив снігопад у марсіанських хмарах.</p>
+                    <button class="btn-more" onclick="openModal('phoenix')">Відкрити бортовий журнал →</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ЕКРАН 5: МІСЯЦЬ -->
+     <section id="moon" class="pin-section">
+        <div class="scene-header">
+            <span class="tag moon-tag">СУПУТНИК ЗЕМЛІ • МІСЯЦЬ</span>
+            <h2 class="section-title">Реліквії епохи Apollo та першопрохідців</h2>
+        </div>
+
+         <div class="stage-container">
+            <!-- 1. Apollo 11 -->
+            <div id="moon-slide-1" class="story-slide">
+                <div class="slide-text from-left">
+                    <span class="years">1969 • Море Спокою</span>
+                    <h3>Посадковий ступінь «Орел»</h3>
+                    <p>Нижня платформа модуля Apollo 11 досі стоїть у місячному пилу. Оскільки на Місяці немає вітру, сліди астронавтів поруч залишаться там мільйони років.</p>
+                    <button class="btn-more" onclick="openModal('apollo11')">Відкрити бортовий журнал →</button>
+                </div>
+                <div class="slide-media from-right">
+                    <img src="https://images-assets.nasa.gov/image/as11-40-5903/as11-40-5903~medium.jpg" alt="Apollo 11">
+                    <span class="img-caption">Екіпаж Apollo 11 на поверхні Місяця</span>
+                </div>
+            </div>
+
+            <div class="story-slide" id="moon-slide-2">
+                <div class="slide-text from-left">
+                    <span class="years">1969 — дотепер • Активні прилади</span>
+                    <h3>Лазерні кутові відбивачі</h3>
+                    <p>Єдине обладнання епохи Apollo, яке працює досі. Вчені з Землі стріляють у них лазером, вимірюючи, як Місяць віддаляється від нас на 3,8 см щороку.</p>
+                    <button class="btn-more" onclick="openModal('lrrrs')">Відкрити бортовий журнал →</button>
+                </div>
+                <div class="slide-media from-right">
+                    <img src="https://images-assets.nasa.gov/image/S71-42358/S71-42358~medium.jpg" alt="LRRR">
+                    <span class="img-caption">Масив кварцових призм на поверхні</span>
+                </div>
+            </div>
+
+            <div class="story-slide" id="moon-slide-3">
+                <div class="slide-text from-left">
+                    <span class="years">1971 — 1972 • Apollo 15, 16, 17</span>
+                    <h3>Місячний електромобіль LRV</h3>
+                    <p>Три електричні «баггі» припарковані на місцях посадок. Їхні дистанційно керовані камери зняли історичні кадри старту астронавтів додому.</p>
+                    <button class="btn-more" onclick="openModal('lrv')">Відкрити бортовий журнал →</button>
+                </div>
+                <div class="slide-media from-right">
+                    <img src="https://images-assets.nasa.gov/image/as15-88-11901/as15-88-11901~medium.jpg" alt="LRV">
+                    <span class="img-caption">Місячний ровер місії Apollo 15</span>
+                </div>
+            </div>
+
+            <div class="story-slide" id="moon-slide-4">
+                <div class="slide-text from-left">
+                    <span class="years">1967 та 1969 • Океан Бур</span>
+                    <h3>Автоматичний зонд Surveyor 3</h3>
+                    <p>Сів на Місяць за два роки до людей. У 1969 році астронавти Apollo 12 приземлилися за 160 метрів від нього та зняли його телекамеру для вивчення впливу космосу.</p>
+                    <button class="btn-more" onclick="openModal('surveyor3')">Відкрити бортовий журнал →</button>
+                </div>
+                <div class="slide-media from-right">
+                    <img src="https://images-assets.nasa.gov/image/as12-48-7136/as12-48-7136~medium.jpg" alt="Surveyor 3">
+                    <span class="img-caption">Астронавт Піт Конрад біля апарата Surveyor 3</span>
+                </div>
+            </div>
+
+            <div class="story-slide" id="moon-slide-5">
+                <div class="slide-text from-left">
+                    <span class="years">1969 — 1977 • Наукові станції Apollo</span>
+                    <h3>Комплекси ALSEP з плутонієм</h3>
+                    <p>Автономні геофізичні лабораторії, що живилися від радіоізотопних генераторів SNAP-27. Понад 8 років вони фіксували місяцетруси та сонячний вітер.</p>
+                    <button class="btn-more" onclick="openModal('alsep')">Відкрити бортовий журнал →</button>
+                </div>
+                <div class="slide-media from-right">
+                    <img src="https://images-assets.nasa.gov/image/as12-47-6913/as12-47-6913~medium.jpg" alt="ALSEP">
+                    <span class="img-caption">Розгортання наукової станції ALSEP</span>
+                </div>
+            </div>
+
+            <div class="story-slide" id="moon-slide-6">
+                <div class="slide-text from-left">
+                    <span class="years">2011 — 2012 • Кратер Саллі Райд</span>
+                    <h3>Зонди-близнюки GRAIL (Ebb і Flow)</h3>
+                    <p>Створили найточнішу гравітаційну карту Місяця, літаючи тандемом. Після вичерпання палива були скеровані у безіменну гору на північному полюсі.</p>
+                    <button class="btn-more" onclick="openModal('grail')">Відкрити бортовий журнал →</button>
+                </div>
+                <div class="slide-media from-right">
+                    <img src="https://images-assets.nasa.gov/image/PIA16587/PIA16587~medium.jpg" alt="GRAIL">
+                    <span class="img-caption">Гравітаційна карта кори Місяця від GRAIL</span>
+                </div>
+            </div>
+
+            <div class="story-slide" id="moon-slide-7">
+                <div class="slide-text from-left">
+                    <span class="years">2009 • Кратер Кабеус (Південний полюс)</span>
+                    <h3>Ударний зонд LCROSS</h3>
+                    <p>Навмисно врізався у вічно затінений кратер, піднявши стовп пилу заввишки 10 км. Спектрометри підтвердили наявність тонн водяного льоду для майбутніх баз.</p>
+                    <button class="btn-more" onclick="openModal('lcross')">Відкрити бортовий журнал →</button>
+                </div>
+                <div class="slide-media from-right">
+                    <img src="https://images-assets.nasa.gov/image/PIA12189/PIA12189~medium.jpg" alt="LCROSS">
+                    <span class="img-caption">Пошук водяного льоду на південному полюсі</span>
+                </div>
+            </div>
+        </div>
+    </section>
+<section id="explorer" class="explorer-section">
+    <div class="explorer-ui">
+        <span class="tag">ІНТЕРАКТИВНИЙ РАДАР</span>
+        <h2 class="section-title">Очима дослідників</h2>
+        <p class="explorer-sub">Обертай глобус мишкою та натисни на маячок апарата, щоб увімкнути вид від першої особи.</p>
+        <div class="planet-switcher">
+            <button class="planet-btn active" data-planet="mars" onclick="setExplorerPlanet('mars')">🔴 Марс</button>
+            <button class="planet-btn" data-planet="moon" onclick="setExplorerPlanet('moon')">⚪ Місяць</button>
+        </div>
+    </div>
+</section>
+
+<!-- Шар для 3D-іконок супутників/роверів -->
+<div id="markers-layer" class="markers-layer"></div>
+
+<div id="pov-overlay" class="pov-overlay">
+    <!-- Сюди рендериться 3D-простір 360 градусів -->
+    <div id="pov-three-container"></div>
+    
+    <div class="pov-vignette"></div>
+    <div class="pov-hud">
+        <div class="pov-top-bar">
+            <div class="pov-rec"><span class="rec-dot"></span> 360° LIVE POV // <span id="pov-cam">CAM-01</span></div>
+            <button class="pov-exit-btn" onclick="closePOV()">✕ Вийти з камери</button>
+        </div>
+        <div class="pov-bottom-panel">
+            <h3 id="pov-title" style="color: #f5c518; margin-bottom: 6px;">Назва</h3>
+            <p id="pov-text" style="font-style: italic; color: #f4f6fb;">Текст від першої особи...</p>
+        </div>
+    </div>
+</div>
+
+    <div class="pov-vignette"></div>
+    <div class="pov-hud">
+        <div class="pov-top-bar">
+            <div class="pov-rec"><span class="rec-dot"></span> LIVE POV // <span id="pov-cam">CAM-01</span></div>
+            <button class="pov-exit-btn" onclick="closePOV()">✕ Вийти з камери</button>
+        </div>
+        <div class="pov-bottom-panel">
+            <h3 id="pov-title" style="color: #f5c518; margin-bottom: 6px;">Назва</h3>
+            <p id="pov-text" style="font-style: italic; color: #f4f6fb;">Текст від першої особи...</p>
+        </div>
+    </div>
+</div>
+    <!-- ФУТЕР -->
+    <footer>
+        <p>NASA Space Apps Challenge 2026 • Інтерактивний освітній архів</p>
+    </footer>
+
+    <!-- МОДАЛЬНЕ ВІКНО -->
+    <div id="story-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal()">&times;</span>
+            <span id="modal-tag" class="tag">МІСІЯ</span>
+            <h2 id="modal-title">Назва апарата</h2>
+            <p id="modal-status" class="status-line">Статус</p>
+            <div id="modal-body" class="modal-text"></div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>

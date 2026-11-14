@@ -1,0 +1,511 @@
+:root {
+    --bg-dark: #06070a;
+    --card-bg: rgba(14, 17, 24, 0.72);
+    --border-color: rgba(255, 255, 255, 0.14);
+    --accent-yellow: #f5c518;
+    --accent-mars: #ff6b4a;
+    --accent-moon: #a8b2d1;
+    --text-main: #f4f6fb;
+    --text-muted: #a6b0c7;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    background-color: var(--bg-dark);
+    color: var(--text-main);
+    font-family: 'Inter', sans-serif;
+    overflow-x: hidden;
+    line-height: 1.6;
+}
+
+#space-canvas {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100vw; height: 100vh;
+    z-index: -1;
+    pointer-events: none;
+}
+
+/* Навігація */
+.navbar {
+    position: fixed;
+    top: 0; width: 100%;
+    padding: 20px 6%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: linear-gradient(to bottom, rgba(6, 7, 10, 0.9), transparent);
+    z-index: 100;
+}
+.scroll-link {
+    color: var(--text-main);
+    text-decoration: none;
+    font-size: 0.95rem;
+    transition: color 0.3s;
+}
+.logo {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 1.5rem;
+    font-weight: 700;
+    letter-spacing: 2px;
+}
+.logo span { color: var(--accent-yellow); margin-left: 4px; }
+
+.nav-links a {
+    color: var(--text-main);
+    text-decoration: none;
+    margin-left: 30px;
+    font-size: 0.95rem;
+    transition: color 0.3s;
+}
+.nav-links a:hover { color: var(--accent-yellow); }
+
+/* Звичайні секції */
+.section {
+    min-height: 100vh;
+    padding: 120px 6%;
+    display: flex;
+    align-items: center;
+}
+
+.hero { justify-content: center; text-align: center; }
+.hero-content { max-width: 920px; }
+
+.badge {
+    display: inline-block;
+    padding: 7px 18px;
+    border: 1px solid var(--accent-yellow);
+    color: var(--accent-yellow);
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 2px;
+    margin-bottom: 22px;
+}
+
+.hero h1 {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: clamp(3.4rem, 7vw, 6.2rem);
+    font-weight: 700;
+    line-height: 1.05;
+    letter-spacing: -0.02em;
+    margin-bottom: 24px;
+    background: linear-gradient(180deg, #ffffff 30%, #b8c2d8 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-shadow: 0 12px 40px rgba(0, 0, 0, 0.7);
+}
+
+.section-title {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: clamp(2.4rem, 4.5vw, 3.8rem);
+    font-weight: 700;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    margin-top: 8px;
+    margin-bottom: 18px;
+    color: #ffffff;
+    text-shadow: 0 6px 30px rgba(0, 0, 0, 0.95);
+}
+
+.subtitle {
+    font-size: 1.2rem;
+    color: var(--text-muted);
+    max-width: 680px;
+    margin: 0 auto 42px;
+}
+
+.scroll-hint {
+    font-size: 0.95rem;
+    color: var(--accent-yellow);
+    animation: bounce 2s infinite;
+}
+
+@keyframes bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(8px); }
+}
+
+.card {
+    max-width: 680px;
+    background: var(--card-bg);
+    backdrop-filter: blur(14px);
+    border: 1px solid var(--border-color);
+    border-radius: 18px;
+    padding: 40px;
+}
+
+.tag {
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 2px;
+    color: var(--accent-yellow);
+    text-transform: uppercase;
+}
+.mars-tag { color: var(--accent-mars); }
+.moon-tag { color: var(--accent-moon); }
+
+/* Секція NASA Company */
+#nasa-company {
+    flex-direction: column;
+    align-items: flex-start;
+    max-width: 1240px;
+    margin: 0 auto;
+}
+.nasa-company-container { width: 100%; }
+.nasa-lead {
+    font-size: 1.15rem;
+    color: var(--text-muted);
+    max-width: 780px;
+    margin: 10px 0 38px;
+}
+.nasa-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+    gap: 25px;
+}
+.nasa-info-card {
+    background: var(--card-bg);
+    backdrop-filter: blur(14px);
+    border: 1px solid var(--border-color);
+    border-radius: 18px;
+    padding: 32px;
+}
+.card-icon { font-size: 2rem; margin-bottom: 12px; }
+
+.slide-left { opacity: 0; transform: translateX(-80px); }
+
+/* ==========================================
+   СЦЕНІЧНІ СЕКЦІЇ (МАРС ТА МІСЯЦЬ)
+   ========================================== */
+.pin-section {
+    height: 100vh;
+    width: 100%;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 0 4%;
+}
+
+.scene-header {
+    position: absolute;
+    top: 82px;
+    left: 4%;
+    z-index: 10;
+    max-width: 700px;
+}
+
+.stage-container {
+    position: relative;
+    width: 100%;
+    height: 480px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 65px;
+}
+
+.story-slide {
+    position: absolute;
+    width: 100%;
+    max-width: 1460px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    pointer-events: none;
+}
+
+.slide-media {
+    width: 31%;
+    opacity: 0;
+    pointer-events: auto;
+}
+
+.slide-media img {
+    width: 100%;
+    height: 290px;
+    object-fit: cover;
+    border-radius: 14px;
+    border: none;
+    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.85);
+}
+
+.img-caption {
+    display: block;
+    margin-top: 10px;
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    letter-spacing: 0.4px;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.95);
+}
+
+.slide-text {
+    width: 33%;
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    padding: 10px 0;
+    opacity: 0;
+    pointer-events: auto;
+    text-shadow: 0 3px 18px rgba(0, 0, 0, 0.98), 0 1px 4px rgba(0, 0, 0, 1);
+}
+
+.slide-text h3 {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 2.15rem;
+    line-height: 1.15;
+    margin: 8px 0 14px;
+    color: #fff;
+}
+
+.slide-text p {
+    color: #e6ebf5;
+    font-size: 1.05rem;
+    margin-bottom: 16px;
+}
+
+.quote {
+    font-style: italic;
+    color: var(--accent-yellow) !important;
+    font-size: 0.98rem !important;
+}
+
+.years {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--accent-yellow);
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+}
+
+.btn-more {
+    background: rgba(6, 7, 10, 0.45);
+    backdrop-filter: blur(6px);
+    border: 1px solid rgba(245, 197, 24, 0.7);
+    color: var(--accent-yellow);
+    padding: 10px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.85rem;
+    transition: all 0.25s;
+}
+
+.btn-more:hover {
+    background: var(--accent-yellow);
+    color: #000;
+}
+
+/* Модальне вікно */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(5, 6, 9, 0.9);
+    backdrop-filter: blur(10px);
+    z-index: 200;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+}
+.modal-content {
+    background: #11141d;
+    border: 1px solid rgba(245, 197, 24, 0.35);
+    border-radius: 20px;
+    max-width: 650px;
+    width: 100%;
+    padding: 40px;
+    position: relative;
+    max-height: 85vh;
+    overflow-y: auto;
+}
+.close-btn {
+    position: absolute;
+    top: 20px; right: 25px;
+    font-size: 2rem;
+    cursor: pointer;
+    color: var(--text-muted);
+}
+.status-line {
+    color: var(--accent-yellow);
+    font-weight: 600;
+    margin: 10px 0 20px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border-color);
+}
+.modal-text p { margin-bottom: 15px; color: #d0d6e6; }
+
+footer {
+    text-align: center;
+    padding: 50px 20px;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    border-top: 1px solid var(--border-color);
+}
+
+@media (max-width: 950px) {
+    .story-slide { flex-direction: column; gap: 18px; }
+    .slide-media, .slide-text { width: 100%; }
+    .slide-media img { height: 180px; }
+    .slide-text h3 { font-size: 1.5rem; }
+}
+/* ==========================================
+   СЕКЦІЯ 3D РАДАР (EXPLORER)
+   ========================================== */
+.explorer-section {
+    position: relative;
+    height: 100vh;
+    width: 100%;
+    padding: 100px 6%;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    overflow: hidden;
+    user-select: none;
+}
+
+.explorer-ui {
+    position: relative;
+    z-index: 15;
+    max-width: 520px;
+    pointer-events: none;
+}
+
+.explorer-sub {
+    color: var(--text-muted);
+    font-size: 0.98rem;
+    margin-bottom: 22px;
+}
+
+.planet-switcher {
+    display: flex;
+    gap: 12px;
+    pointer-events: auto;
+}
+
+.planet-btn {
+    background: rgba(14, 17, 24, 0.8);
+    border: 1px solid var(--border-color);
+    color: var(--text-main);
+    padding: 11px 20px;
+    border-radius: 10px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    backdrop-filter: blur(10px);
+    transition: all 0.25s;
+}
+
+.planet-btn:hover {
+    border-color: var(--accent-yellow);
+}
+
+.planet-btn.active {
+    background: var(--accent-yellow);
+    color: #06070a;
+    border-color: var(--accent-yellow);
+}
+
+/* Шар із маячками на 3D-планеті */
+.markers-layer {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100vw; height: 100vh;
+    pointer-events: none;
+    z-index: 12;
+}
+
+.pin-marker {
+    position: absolute;
+    transform: translate(-50%, -50%);
+    pointer-events: auto;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: opacity 0.2s;
+}
+
+.pin-dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--accent-yellow);
+    box-shadow: 0 0 0 4px rgba(245, 197, 24, 0.25), 0 0 16px var(--accent-yellow);
+    animation: pulsePin 2s infinite;
+}
+
+.pin-marker.mars-pin .pin-dot {
+    background: var(--accent-mars);
+    box-shadow: 0 0 0 4px rgba(255, 107, 74, 0.25), 0 0 16px var(--accent-mars);
+}
+
+.pin-label {
+    background: rgba(6, 7, 10, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #fff;
+    white-space: nowrap;
+    backdrop-filter: blur(6px);
+    transition: all 0.2s;
+}
+
+.pin-marker:hover .pin-label {
+    border-color: var(--accent-yellow);
+    color: var(--accent-yellow);
+    transform: scale(1.06);
+}
+
+@keyframes pulsePin {
+    0% { transform: scale(0.95); }
+    50% { transform: scale(1.2); }
+    100% { transform: scale(0.95); }
+}
+
+.explorer-section { position: relative; height: 100vh; padding: 100px 6%; overflow: hidden; user-select: none; }
+.explorer-ui { position: relative; z-index: 15; max-width: 500px; pointer-events: none; }
+.explorer-sub { color: #a6b0c7; margin-bottom: 20px; }
+.planet-switcher { display: flex; gap: 12px; pointer-events: auto; }
+.planet-btn { background: rgba(14,17,24,0.85); border: 1px solid rgba(255,255,255,0.2); color: #fff; padding: 10px 18px; border-radius: 8px; cursor: pointer; font-weight: 600; }
+.planet-btn.active { background: #f5c518; color: #000; border-color: #f5c518; }
+
+.markers-layer { position: fixed; inset: 0; pointer-events: none; z-index: 12; display: none; }
+.pin-marker { position: absolute; transform: translate(-50%, -50%); pointer-events: auto; cursor: pointer; display: flex; align-items: center; gap: 8px; }
+.pin-dot { width: 14px; height: 14px; border-radius: 50%; background: #f5c518; box-shadow: 0 0 12px #f5c518; }
+.pin-marker.mars-pin .pin-dot { background: #ff6b4a; box-shadow: 0 0 12px #ff6b4a; }
+.pin-label { background: rgba(6,7,10,0.85); border: 1px solid rgba(255,255,255,0.25); padding: 4px 10px; border-radius: 6px; font-size: 0.8rem; color: #fff; white-space: nowrap; }
+
+.pov-overlay { display: none; position: fixed; inset: 0; z-index: 300; background: #000; overflow: hidden; }
+#pov-three-container {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    cursor: grab;
+}
+#pov-three-container:active {
+    cursor: grabbing;
+}
+.pov-vignette { position: absolute; inset: 0; background: radial-gradient(circle, transparent 45%, rgba(0,0,0,0.88) 100%); pointer-events: none; }
+.pov-hud { position: relative; z-index: 5; height: 100%; padding: 30px 5%; display: flex; flex-direction: column; justify-content: space-between; }
+.pov-top-bar { display: flex; justify-content: space-between; align-items: center; }
+.pov-rec { background: rgba(0,0,0,0.7); padding: 8px 14px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.2); font-family: monospace; display: flex; align-items: center; gap: 8px; }
+.rec-dot { width: 8px; height: 8px; border-radius: 50%; background: #ff3b30; }
+.pov-exit-btn { background: #f5c518; color: #000; border: none; padding: 10px 18px; border-radius: 8px; font-weight: 700; cursor: pointer; }
+.pov-bottom-panel { background: rgba(10,12,18,0.85); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.18); border-radius: 14px; padding: 22px; max-width: 720px; }
